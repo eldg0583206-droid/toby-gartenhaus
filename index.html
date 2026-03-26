@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-  <button onclick="handleAuth()">🔐 התחבר לסנכרון</button>
 
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Toby Gartenhaus — מערכת ניהול</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Heebo:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <button onclick="handleAuth()">🔐 התחבר לסנכרון</button>
+  
 <style>
 :root{
   --eg:#0d4a35;--em:#155c42;--el:#1e7a57;--ew:#34b880;
@@ -5055,5 +5056,107 @@ function saveData() {
   <div class="fab-label">עסקה חדשה</div>
 </div>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js");}</script>
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+const CLIENT_ID = "שים_כאן_CLIENT_ID";
+
+let tokenClient;
+let accessToken = null;
+let fileId = null;
+
+// התחלה
+window.addEventListener("load", () => {
+  gapi.load('client', async () => {
+    await gapi.client.init({
+      discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
+    });
+  });
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: "https://www.googleapis.com/auth/drive.file",
+    callback: async (resp) => {
+      if (resp.error) return;
+
+      accessToken = resp.access_token;
+
+      await initFile();
+      await loadData();
+      startAutoSave();
+    }
+  });
+});
+
+function handleAuth() {
+  tokenClient.requestAccessToken();
+}
+
+// יצירת קובץ
+async function initFile() {
+  const res = await gapi.client.drive.files.list({
+    q: "name='toby_data.json'",
+    spaces: 'drive'
+  });
+
+  if (res.result.files.length > 0) {
+    fileId = res.result.files[0].id;
+  } else {
+    const create = await fetch(
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=media",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + accessToken,
+          "Content-Type": "application/json"
+        },
+        body: "{}"
+      }
+    );
+
+    const data = await create.json();
+    fileId = data.id;
+  }
+}
+
+// טעינה
+async function loadData() {
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+    {
+      headers: { Authorization: "Bearer " + accessToken }
+    }
+  );
+
+  if (res.status === 200) {
+    const data = await res.json();
+    localStorage.setItem("data", JSON.stringify(data));
+    console.log("✔ נטען מהענן");
+  }
+}
+
+// שמירה אוטומטית
+function startAutoSave() {
+  setInterval(async () => {
+    const data = localStorage.getItem("data");
+    if (!data) return;
+
+    await fetch(
+      `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer " + accessToken,
+          "Content-Type": "application/json"
+        },
+        body: data
+      }
+    );
+
+    console.log("💾 נשמר בענן");
+  }, 5000);
+}
+</script>
 </body>
 </html>
