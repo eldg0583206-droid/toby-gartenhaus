@@ -1,0 +1,24 @@
+{
+  "name": "Toby Gartenhaus",
+  "short_name": "Toby",
+  "description": "מערכת ניהול עסק - טובי גרטנהאוס",
+  "start_url": "/toby-gartenhaus/",
+  "display": "standalone",
+  "background_color": "#1a2f23",
+  "theme_color": "#1a2f23",
+  "orientation": "portrait",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
